@@ -791,6 +791,7 @@ footer .brand b { color: #fff; }
   try {
     if (window.firebase) {
       firebase.initializeApp(firebaseConfig);
+      try { firebase.setLogLevel('error'); } catch (e) {}
       fb.db = firebase.firestore();
       if (firebase.analytics && firebase.analytics.isSupported) {
         firebase.analytics.isSupported().then(function (ok) {
