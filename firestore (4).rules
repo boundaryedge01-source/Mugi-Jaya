@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Form di website hanya boleh MENAMBAH data ke koleksi "leads".
+    // Membaca, mengubah, dan menghapus ditutup. Admin membaca lewat Firebase Console.
+
+    function dasarValid(d) {
+      return d.nama is string && d.nama.size() >= 2 && d.nama.size() <= 80
+        && d.telepon is string && d.telepon.size() >= 9 && d.telepon.size() <= 16
+        && d.sumber == 'website'
+        && d.halaman in ['beranda', 'harga', 'renovasi-atap', 'rumah-subsidi']
+        && d.createdAt == request.time
+        && (!('catatan' in d) || (d.catatan is string && d.catatan.size() <= 300));
+    }
+
+    function estimasiValid(d) {
+      return d.luasMeter is number && d.luasMeter >= 0 && d.luasMeter <= 100000
+        && d.jumlahRuangan is int && d.jumlahRuangan >= 0 && d.jumlahRuangan <= 200
+        && d.butuhDesain is bool
+        && d.estimasiTotal is number
+        && d.paketRenovasi is bool;
+    }
+
+    match /leads/{leadId} {
+      // Form singkat (halaman atap, rumah subsidi)
+      allow create: if request.resource.data.keys().hasOnly(
+            ['nama', 'telepon', 'halaman', 'sumber', 'catatan', 'createdAt'])
+        && dasarValid(request.resource.data);
+
+      // Form dengan estimasi (halaman harga)
+      allow create: if request.resource.data.keys().hasOnly(
+            ['nama', 'telepon', 'halaman', 'sumber', 'catatan', 'createdAt',
+             'luasMeter', 'jumlahRuangan', 'butuhDesain', 'estimasiTotal', 'paketRenovasi'])
+        && request.resource.data.keys().hasAll(
+            ['luasMeter', 'jumlahRuangan', 'butuhDesain', 'estimasiTotal', 'paketRenovasi'])
+        && dasarValid(request.resource.data)
+        && estimasiValid(request.resource.data);
+
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
