@@ -46,24 +46,29 @@
   }
 
   /* ---------- Konversi Google Ads ---------- */
-  var ADS_CONV = 'AW-18562986075/paoUCK7E47QdENvgwpNF';
+  /* Label terpisah: klik WhatsApp/lead dan tayangan halaman. */
+  var ADS_WA_CONV = 'AW-18562986075/paoUCK7E47QdENvgwpNF';
+  var ADS_PAGEVIEW_CONV = 'AW-18562986075/evK7CKvE47QdENvgwpNF';
   function gtagPush() { window.dataLayer = window.dataLayer || []; window.dataLayer.push(arguments); }
-  function adsConversion(txId) {
+  function adsConversion(sendTo, txId) {
     try {
-      var p = { send_to: ADS_CONV };
+      var p = { send_to: sendTo };
       if (txId) p.transaction_id = String(txId);
       gtagPush('event', 'conversion', p);
     } catch (e) {}
   }
 
-  /* klik WhatsApp (termasuk tombol yang dibuat belakangan).
-     Tombol "after_lead" tidak dihitung lagi, karena form yang sama sudah dihitung sebagai konversi. */
+  /* Konversi tayangan halaman dikirim sekali saat halaman dimuat. */
+  adsConversion(ADS_PAGEVIEW_CONV);
+
+  /* Klik WhatsApp (termasuk tombol yang dibuat belakangan).
+     Tombol after_lead tidak dihitung lagi karena lead sudah dihitung saat tersimpan. */
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('.wa-link') : null;
     if (!a) return;
     var ev = a.getAttribute('data-ev') || 'link';
     track('contact_whatsapp', { placement: ev, page: PAGE });
-    if (ev !== 'after_lead') adsConversion();
+    if (ev !== 'after_lead') adsConversion(ADS_WA_CONV);
   });
 
   /* ---------- Menu ponsel ---------- */
@@ -241,7 +246,7 @@
       var wa = waUrl(buildMessage(true));
       save.then(function (ref) {
         track('generate_lead', { page: PAGE, value: hasEst ? state.total : 0, currency: 'IDR' });
-        adsConversion(ref && ref.id);
+        adsConversion(ADS_WA_CONV, ref && ref.id);
         setStatus('ok', '<div class="done"><span>Terima kasih, ' + escapeHtml(nama) + '. Permintaan Anda sudah masuk. Admin akan menghubungi lewat WhatsApp.</span><a class="btn sm wa-link" data-ev="after_lead" href="' + wa + '" target="_blank" rel="noopener">Percepat lewat chat WhatsApp</a></div>');
         sendBtn.disabled = false;
       }).catch(function () {
