@@ -45,10 +45,25 @@
     try { if (fb.analytics) fb.analytics.logEvent(name, params || {}); } catch (e) {}
   }
 
-  /* klik WhatsApp (termasuk tombol yang dibuat belakangan) */
+  /* ---------- Konversi Google Ads ---------- */
+  var ADS_CONV = 'AW-18562986075/paoUCK7E47QdENvgwpNF';
+  function gtagPush() { window.dataLayer = window.dataLayer || []; window.dataLayer.push(arguments); }
+  function adsConversion(txId) {
+    try {
+      var p = { send_to: ADS_CONV };
+      if (txId) p.transaction_id = String(txId);
+      gtagPush('event', 'conversion', p);
+    } catch (e) {}
+  }
+
+  /* klik WhatsApp (termasuk tombol yang dibuat belakangan).
+     Tombol "after_lead" tidak dihitung lagi, karena form yang sama sudah dihitung sebagai konversi. */
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('.wa-link') : null;
-    if (a) track('contact_whatsapp', { placement: a.getAttribute('data-ev') || 'link', page: PAGE });
+    if (!a) return;
+    var ev = a.getAttribute('data-ev') || 'link';
+    track('contact_whatsapp', { placement: ev, page: PAGE });
+    if (ev !== 'after_lead') adsConversion();
   });
 
   /* ---------- Menu ponsel ---------- */
@@ -224,8 +239,9 @@
       }
 
       var wa = waUrl(buildMessage(true));
-      save.then(function () {
+      save.then(function (ref) {
         track('generate_lead', { page: PAGE, value: hasEst ? state.total : 0, currency: 'IDR' });
+        adsConversion(ref && ref.id);
         setStatus('ok', '<div class="done"><span>Terima kasih, ' + escapeHtml(nama) + '. Permintaan Anda sudah masuk. Admin akan menghubungi lewat WhatsApp.</span><a class="btn sm wa-link" data-ev="after_lead" href="' + wa + '" target="_blank" rel="noopener">Percepat lewat chat WhatsApp</a></div>');
         sendBtn.disabled = false;
       }).catch(function () {
